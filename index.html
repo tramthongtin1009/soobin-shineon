@@ -32,11 +32,36 @@
       margin-top: 20px;
     }
     .video-item {
-      margin: 10px 0;
+      margin: 20px 0;
       font-size: 1.1em;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .video-item img {
+      width: 120px;
+      height: 90px;
+      margin-right: 15px;
+    }
+    .video-details {
+      max-width: 500px;
+      text-align: left;
     }
     .video-item span {
       font-weight: bold;
+    }
+    .progress {
+      margin-top: 10px;
+      background-color: #f3f3f3;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 20px;
+      background-color: gold;
+      width: 0%;
+      transition: width 1s ease;
     }
   </style>
 </head>
@@ -62,30 +87,38 @@
       const response = await fetch(sheetUrl);
       const data = await response.json();
       const rows = data.feed.entry;
-      
+
       const videoIds = rows.map(row => row.gsx$videoid.$t);
+      const videoNames = rows.map(row => row.gsx$videoname.$t);
       const targetViews = rows.map(row => parseInt(row.gsx$target.$t));
 
-      fetchVideoData(videoIds, targetViews);
+      fetchVideoData(videoIds, videoNames, targetViews);
     }
 
     // Lấy thông tin view từ YouTube API
-    function fetchVideoData(videoIds, targetViews) {
+    function fetchVideoData(videoIds, videoNames, targetViews) {
       videoIds.forEach((videoId, index) => {
-        fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=statistics`)
+        fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet,statistics`)
           .then(response => response.json())
           .then(data => {
             const views = data.items[0].statistics.viewCount;
+            const thumbnail = data.items[0].snippet.thumbnails.medium.url;
+            const title = data.items[0].snippet.title;
             const target = targetViews[index];
             const difference = target - views;
 
             const videoDiv = document.createElement('div');
             videoDiv.className = 'video-item';
+            
             videoDiv.innerHTML = `
-              <span>Video ${index + 1}:</span> 
-              Views: ${views} | 
-              Target: ${target} | 
-              Chênh lệch: ${difference > 0 ? difference : 0}
+              <img src="${thumbnail}" alt="${title}">
+              <div class="video-details">
+                <span>${videoNames[index]}</span>
+                <p>Views: ${views} | Target: ${target} | Chênh lệch: ${difference > 0 ? difference : 0}</p>
+                <div class="progress">
+                  <div class="progress-bar" style="width: ${(views / target) * 100}%"></div>
+                </div>
+              </div>
             `;
             document.getElementById('videoTracker').appendChild(videoDiv);
           });
