@@ -38,6 +38,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-wrap: wrap;
     }
     .video-item img {
       width: 120px;
@@ -77,9 +78,9 @@
   </main>
 
   <script>
-    const apiKey = 'AIzaSyC5CF7Bq2H8M6oHTrvkwZqRE1ow0xeM4i4'; // Thay bằng API key của bạn
+    const apiKey = 'AIzaSyC5CF7Bq2H8M6oHTrvkwZqRE1ow0xeM4i4'; // API key của bạn
 
-    // ID của Google Sheet và link API của Sheet
+    // URL để lấy dữ liệu từ Google Sheets
     const sheetUrl = 'https://spreadsheets.google.com/feeds/list/2PACX-1vRq3upi9Bdn5eDjjFrA1fpHCqQZgjVPhXNsis5CyK0k0zwMkObI8OdPX0HDmZ7zFmfxsprpyNGOhVqL/od6/public/basic?alt=json';
 
     // Lấy dữ liệu từ Google Sheets (ID video và target)
@@ -88,6 +89,7 @@
       const data = await response.json();
       const rows = data.feed.entry;
 
+      // Lấy video ID, video name và target view từ Google Sheets
       const videoIds = rows.map(row => row.gsx$videoid.$t);
       const videoNames = rows.map(row => row.gsx$videoname.$t);
       const targetViews = rows.map(row => parseInt(row.gsx$target.$t));
@@ -109,7 +111,8 @@
 
             const videoDiv = document.createElement('div');
             videoDiv.className = 'video-item';
-            
+
+            // HTML để hiển thị thông tin video
             videoDiv.innerHTML = `
               <img src="${thumbnail}" alt="${title}">
               <div class="video-details">
