@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOOBIN View Tracker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f6f1; /* beige */
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: linear-gradient(to right, #fff, #f9f6f1);
+      padding: 1rem 2rem;
+      text-align: center;
+      border-bottom: 4px solid gold;
+    }
+    header h1 {
+      margin: 0;
+      color: #bfa145;
+    }
+    header p {
+      font-style: italic;
+      color: #8a6d3b;
+    }
+    .container {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      max-width: 900px;
+      margin: auto;
+    }
+    .video-card {
+      background-color: #fff;
+      border: 2px solid #f1e5c8;
+      border-left: 8px solid gold;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .video-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    .progress-bar {
+      background-color: #eaeaea;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    .progress {
+      background-color: gold;
+      height: 16px;
+      transition: width 0.5s ease;
+    }
+    .stats {
+      font-size: 0.95rem;
+      color: #555;
+      margin-top: 0.5rem;
+    }
+    a {
+      text-decoration: none;
+      color: #bfa145;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SOOBIN View Tracker</h1>
+    <p>To Gether We Shine</p>
+  </header>
+  <main class="container" id="video-list">
+    <p>Đang tải dữ liệu...</p>
+  </main>
+  <script>
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq3upi9Bdn5eDjjFrA1fpHCqQZgjVPhXNsis5CyK0k0zwMkObI8OdPX0HDmZ7zFmfxsprpyNGOhVqL/pub?output=csv";
+
+    async function fetchCSV(url) {
+      const res = await fetch(url);
+      const text = await res.text();
+      return text.split('\n').slice(1).map(row => {
+        const cols = row.split(',');
+        return {
+          title: cols[0],
+          url: cols[1],
+          target: parseInt(cols[2].replace(/,/g, ''))
+        };
+      });
+    }
+
+    async function fetchViewCount(videoId) {
+      const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.view_count || null;
+    }
+
+    function extractVideoID(url) {
+      const match = url.match(/(?:v=|\.be\/)([\w-]{11})/);
+      return match ? match[1] : null;
+    }
+
+    function formatNumber(n) {
+      return n.toLocaleString('vi-VN');
+    }
+
+    async function renderVideos() {
+      const container = document.getElementById('video-list');
+      container.innerHTML = '';
+      const data = await fetchCSV(SHEET_URL);
+
+      data.forEach(async video => {
+        const videoId = extractVideoID(video.url);
+        const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoId}&key=YOUR_API_KEY`;
+
+        const res = await fetch(apiUrl);
+        const json = await res.json();
+        const viewCount = parseInt(json.items[0]?.statistics?.viewCount || 0);
+
+        const percent = Math.min(100, (viewCount / video.target) * 100);
+
+        const card = document.createElement('div');
+        card.className = 'video-card';
+        card.innerHTML = `
+          <div class="video-title"><a href="${video.url}" target="_blank">${video.title}</a></div>
+          <div class="progress-bar">
+            <div class="progress" style="width: ${percent}%"></div>
+          </div>
+          <div class="stats">
+            Đã đạt: ${formatNumber(viewCount)} / ${formatNumber(video.target)} (${percent.toFixed(1)}%)
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    renderVideos();
+  </script>
+</body>
+</html>
